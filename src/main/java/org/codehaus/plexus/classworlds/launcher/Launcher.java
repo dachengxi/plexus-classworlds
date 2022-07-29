@@ -43,6 +43,8 @@ import org.codehaus.plexus.classworlds.realm.NoSuchRealmException;
  * <code>java</code>.</p>
  *
  * @author <a href="mailto:bob@eng.werken.com">bob mcwhirter</a>
+ *
+ * plexus-classworlds的启动类
  */
 public class Launcher
 {
@@ -119,12 +121,16 @@ public class Launcher
      *                                 with the same id.
      * @throws org.codehaus.plexus.classworlds.realm.NoSuchRealmException    If the config file defines a main entry
      *                                 point in a non-existent realm.
+     *
+     * 读取配置文件，并进行配置
      */
     public void configure( InputStream is )
         throws IOException, ConfigurationException, DuplicateRealmException, NoSuchRealmException
     {
+        // 配置器
         Configurator configurator = new Configurator( this );
 
+        // 读取配置文件进行配置
         configurator.configure( is );
     }
 
@@ -216,6 +222,8 @@ public class Launcher
      * @throws InvocationTargetException If the target of the invokation is invalid.
      * @throws NoSuchMethodException     If the main entry method cannot be found.
      * @throws NoSuchRealmException      If the main entry realm cannot be found.
+     *
+     * 启动配置文件中指定的应用
      */
     public void launch( String[] args )
         throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException,
@@ -223,6 +231,7 @@ public class Launcher
     {
         try
         {
+            // 先尝试使用增强的main方法启动应用：public static void main(String[] args, ClassWorld world)
             launchEnhanced( args );
 
             return;
@@ -232,6 +241,7 @@ public class Launcher
             // ignore
         }
 
+        // 如果增强的main方法启用不成功，则使用标准的main方法启动应用：public static void main(String[] args)
         launchStandard( args );
     }
 
@@ -250,15 +260,20 @@ public class Launcher
      *                                   invalid.
      * @throws NoSuchMethodException     If the main entry method cannot be found.
      * @throws NoSuchRealmException      If the main entry realm cannot be found.
+     *
+     * 使用增强的main方法启动应用：public static void main(String[] args, ClassWorld world)
      */
     protected void launchEnhanced( String[] args )
         throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException,
         NoSuchRealmException
     {
+        // 获取main方法对应的Realm实例
         ClassRealm mainRealm = getMainRealm();
 
+        // 使用ClassRealm加载main方法所在的类
         Class<?> mainClass = getMainClass();
 
+        // 获取增强的main方法
         Method mainMethod = getEnhancedMainMethod();
 
         ClassLoader cl = mainRealm;
@@ -280,6 +295,7 @@ public class Launcher
 
         Thread.currentThread().setContextClassLoader( cl );
 
+        // 反射调用增强的main方法
         Object ret = mainMethod.invoke( mainClass, args, getWorld() );
 
         if ( ret instanceof Integer )
@@ -306,19 +322,25 @@ public class Launcher
      *                                   invalid.
      * @throws NoSuchMethodException     If the main entry method cannot be found.
      * @throws NoSuchRealmException      If the main entry realm cannot be found.
+     *
+     * 标准的main方法启动应用：public static void main(String[] args)
      */
     protected void launchStandard( String[] args )
         throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException,
         NoSuchRealmException
     {
+        // 获取main方法对应的Realm实例
         ClassRealm mainRealm = getMainRealm();
 
+        // 使用ClassRealm加载main方法所在的类
         Class<?> mainClass = getMainClass();
 
+        // 获取main方法
         Method mainMethod = getMainMethod();
 
         Thread.currentThread().setContextClassLoader( mainRealm );
 
+        // 使用反射调用main方法
         Object ret = mainMethod.invoke( mainClass, new Object[]{args} );
 
         if ( ret instanceof Integer )
@@ -340,11 +362,14 @@ public class Launcher
      * or some other code for an application error.
      *
      * @param args The application command-line arguments.
+     *
+     * plexus-classworlds的启动类的main方法
      */
     public static void main( String[] args )
     {
         try
         {
+            // 解析参数，并启动配置文件中指定的启动类
             int exitCode = mainWithExitCode( args );
 
             System.exit( exitCode );
@@ -363,22 +388,28 @@ public class Launcher
      * @param args The application command-line arguments.
      * @return an integer exit code
      * @throws Exception If an error occurs.
+     *
+     * 解析参数，并启动配置文件中指定的启动类
      */
     public static int mainWithExitCode( String[] args )
         throws Exception
     {
+        // 从系统属性classworlds.conf中获取配置文件
         String classworldsConf = System.getProperty( CLASSWORLDS_CONF );
 
         InputStream is;
 
         Launcher launcher = new Launcher();
 
+        // 类加载器
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
+        // 设置系统类加载器
         launcher.setSystemClassLoader( cl );
 
         if ( classworldsConf != null )
         {
+            // 读取配置文件
             is = Files.newInputStream( Paths.get( classworldsConf ) );
         }
         else
@@ -398,12 +429,14 @@ public class Launcher
             throw new Exception( "classworlds configuration not specified nor found in the classpath" );
         }
 
+        // 对配置文件中的内容进行解析并进行配置
         launcher.configure( is );
 
         is.close();
 
         try
         {
+            // 启动配置文件中指定的应用
             launcher.launch( args );
         }
         catch ( InvocationTargetException e )

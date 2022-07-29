@@ -39,6 +39,8 @@ import org.codehaus.plexus.classworlds.realm.NoSuchRealmException;
  * @author Jason van Zyl
  * @author Igor Fedorenko
  * @see ConfigurationHandler
+ *
+ * 配置解析器
  */
 public class ConfigurationParser
 {
@@ -72,7 +74,9 @@ public class ConfigurationParser
      * @throws IOException when IOException occurs
      * @throws ConfigurationException when ConfigurationException occurs
      * @throws DuplicateRealmException when realm already exists
-     * @throws NoSuchRealmException when realm doesn't exist 
+     * @throws NoSuchRealmException when realm doesn't exist
+     *
+     * 解析配置
      */
     public void parse( InputStream is )
         throws IOException, ConfigurationException, DuplicateRealmException, NoSuchRealmException
@@ -87,6 +91,7 @@ public class ConfigurationParser
         
         String curRealm = null;
 
+        // 逐行读取并解析配置文件
         while ( true )
         {
             line = reader.readLine();
@@ -99,13 +104,16 @@ public class ConfigurationParser
             ++lineNo;
             line = line.trim();
 
+            // #开头的是注释，不用解析
             if ( canIgnore( line ) )
             {
                 continue;
             }
 
+            // main is开头的配置行，比如：main is org.apache.maven.cli.MavenCli from plexus.core
             if ( line.startsWith( MAIN_PREFIX ) )
             {
+                // 配置文件中只能有一个main is配置
                 if ( mainSet )
                 {
                     throw new ConfigurationException( "Duplicate main configuration", lineNo, line );
@@ -120,14 +128,18 @@ public class ConfigurationParser
                     throw new ConfigurationException( "Missing from clause", lineNo, line );
                 }
 
+                // main is和from之间的是应用的main方法所在的类的名字
                 String mainClassName = filter( conf.substring( 0, fromLoc ).trim() );
 
+                // from后面的是Realm块的名字
                 String mainRealmName = filter( conf.substring( fromLoc + 4 ).trim() );
 
+                // 给配置器设置main方法所在类的名字和对应的Realm块
                 this.handler.setAppMain( mainClassName, mainRealmName );
 
                 mainSet = true;
             }
+            // set开头的是设置系统变量的配置，比如：set maven.conf default ${maven.home}/conf
             else if ( line.startsWith( SET_PREFIX ) )
             {
                 String conf = line.substring( SET_PREFIX.length() ).trim();
@@ -138,6 +150,7 @@ public class ConfigurationParser
 
                 String propertiesFileName = null;
 
+                // using后面是指定的属性文件名字
                 if ( usingLoc > 0 )
                 {
                     property = conf.substring( 0, usingLoc ).trim();
@@ -151,6 +164,7 @@ public class ConfigurationParser
 
                 int defaultLoc = conf.indexOf( " default" ) + 1;
 
+                // default后面是指定的默认值
                 if ( defaultLoc > 0 )
                 {
                     defaultValue = filter( conf.substring( defaultLoc + 7 ).trim() );
@@ -201,9 +215,11 @@ public class ConfigurationParser
                 if ( value != null )
                 {
                     value = filter( value );
+                    // 设置系统属性
                     systemProperties.setProperty( property, value );
                 }
             }
+            // Realm块
             else if ( line.startsWith( "[" ) )
             {
                 int rbrack = line.indexOf( "]" );
@@ -215,10 +231,12 @@ public class ConfigurationParser
 
                 String realmName = line.substring( 1, rbrack );
 
+                // 创建Realm实例并添加到ClassWorld中
                 handler.addRealm( realmName );
 
                 curRealm = realmName;
             }
+            // Realm块中的import开头的配置
             else if ( line.startsWith( IMPORT_PREFIX ) )
             {
                 if ( curRealm == null )
@@ -242,6 +260,7 @@ public class ConfigurationParser
                 handler.addImportFrom( relamName, importSpec );
 
             }
+            // Realm块中的load开头的配置
             else if ( line.startsWith( LOAD_PREFIX ) )
             {
                 String constituent = line.substring( LOAD_PREFIX.length() ).trim();
@@ -273,6 +292,7 @@ public class ConfigurationParser
                     }
                 }
             }
+            // Realm块中的optionally开头的配置
             else if ( line.startsWith( OPTIONALLY_PREFIX ) )
             {
                 String constituent = line.substring( OPTIONALLY_PREFIX.length() ).trim();

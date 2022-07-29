@@ -32,6 +32,8 @@ import org.codehaus.plexus.classworlds.realm.NoSuchRealmException;
  * A collection of <code>ClassRealm</code>s, indexed by id.
  *
  * @author <a href="mailto:bob@eng.werken.com">bob mcwhirter</a>
+ *
+ * ClassWorld是ClassRealm的集合，持有了一个Map来存放id和ClassRealm的关系
  */
 public class ClassWorld
 {

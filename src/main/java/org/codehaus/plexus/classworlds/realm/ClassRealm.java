@@ -45,6 +45,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author <a href="mailto:bob@eng.werken.com">bob mcwhirter</a>
  * @author Jason van Zyl
+ *
+ * 可认为是一个自定义的ClassLoader，重写了loadClass方法，在加载类的时候会使用不同的Strategy进行
  */
 public class ClassRealm
     extends URLClassLoader
@@ -58,6 +60,9 @@ public class ClassRealm
 
     private SortedSet<Entry> parentImports;
 
+    /**
+     * 默认是SelfFirstStrategy
+     */
     private Strategy strategy;
 
     private ClassLoader parentClassLoader;

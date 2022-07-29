@@ -36,6 +36,8 @@ import org.codehaus.plexus.classworlds.realm.NoSuchRealmException;
  *
  * @author <a href="mailto:bob@eng.werken.com">bob mcwhirter</a>
  * @author Jason van Zyl
+ *
+ * 配置器
  */
 public class Configurator implements ConfigurationHandler
 {
@@ -108,12 +110,15 @@ public class Configurator implements ConfigurationHandler
      * @throws org.codehaus.plexus.classworlds.realm.DuplicateRealmException If the config file defines two realms with the same id.
      * @throws org.codehaus.plexus.classworlds.realm.NoSuchRealmException    If the config file defines a main entry point in
      *                                 a non-existent realm.
+     *
+     * 读取配置文件进行配置
      */
     public void configure( InputStream is )
         throws IOException, ConfigurationException, DuplicateRealmException, NoSuchRealmException
     {
         if ( world == null )
         {
+            // 创建ClassWorld实例
             world = new ClassWorld();
         }
 
@@ -123,14 +128,18 @@ public class Configurator implements ConfigurationHandler
 
         if ( this.launcher != null )
         {
+            // Launcher使用的系统类加载器
             foreignClassLoader = this.launcher.getSystemClassLoader();
         }
 
+        // 配置解析器
         ConfigurationParser parser = new ConfigurationParser( this, System.getProperties() );
 
+        // 解析配置
         parser.parse( is );
 
         // Associate child realms to their parents.
+        // 关联父子Realm
         associateRealms();
 
         if ( this.launcher != null )
@@ -143,6 +152,8 @@ public class Configurator implements ConfigurationHandler
     // TODO return this to protected when the legacy wrappers can be removed.
     /**
      * Associate parent realms with their children.
+     *
+     * 关联父子Realm
      */
     public void associateRealms()
     {
@@ -207,9 +218,11 @@ public class Configurator implements ConfigurationHandler
     public void addRealm( String realmName )
         throws DuplicateRealmException
     {
+        // 创建Realm实例并添加到ClassWorld中
         curRealm = world.newRealm( realmName, foreignClassLoader );
 
         // Stash the configured realm for subsequent association processing.
+        // 添加到已经处理过的Map中
         configuredRealms.put( realmName, curRealm );
     }
 
